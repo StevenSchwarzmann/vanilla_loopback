@@ -7,7 +7,8 @@
       "authPath": "/auth/local",
       "successRedirect": "/auth/account",
       "failureRedirect": "/local",
-      "failureFlash": true
+      "failureFlash": true,
+      "setAccessToken": true
     },
     "ldap": {
       "provider": "ldap",
