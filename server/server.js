@@ -1,3 +1,6 @@
+//ACCESS TOKEN EXISTS IN REQ.SIGNEDCOOKIES.ACCESSTOKEN
+//INSTANCE OF ACCESSTOKEN MODEL IS NOT CREATED AFTER LOCAL LOGIN
+//INSTANCE OF ACCESSTOKEN MODEL IS CREATED AFTER SOCIAL LOGIN
 'use strict';
 
 var loopback = require('loopback');
@@ -11,8 +14,22 @@ var loopbackPassport = require('loopback-component-passport');
 var PassportConfigurator = loopbackPassport.PassportConfigurator;
 var passportConfigurator = new PassportConfigurator(app);
 
+/*
+ * body-parser is a piece of express middleware that
+ *   reads a form's input and stores it as a javascript
+ *   object accessible through `req.body`
+ *
+ */
 var bodyParser = require('body-parser');
 
+/**
+ * Flash messages for passport
+ *
+ * Setting the failureFlash option to true instructs Passport to flash an
+ * error message using the message given by the strategy's verify callback,
+ * if any. This is often the best approach, because the verify callback
+ * can make the most accurate determination of why authentication failed.
+ */
 var flash = require('express-flash');
 
 // attempt to build the providers/passport config
@@ -24,9 +41,15 @@ try {
   process.exit(1); // fatal
 }
 
+// -- Add your pre-processing middleware here --
+
+// Setup the view engine (jade)
 var path = require('path');
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
+
+// boot scripts mount components like REST API
+boot(app, __dirname);
 
 // to support JSON-encoded bodies
 app.middleware('parse', bodyParser.json());
@@ -51,11 +74,11 @@ passportConfigurator.init();
 // We need flash messages to see passport errors
 app.use(flash());
 
-// passportConfigurator.setupModels({
-//   userModel: app.models.user,
-//   userIdentityModel: app.models.userIdentity,
-//   userCredentialModel: app.models.userCredential,
-// });
+passportConfigurator.setupModels({
+  userModel: app.models.user,
+  userIdentityModel: app.models.userIdentity,
+  userCredentialModel: app.models.userCredential,
+});
 for (var s in config) {
   var c = config[s];
   c.session = c.session !== false;
@@ -63,6 +86,8 @@ for (var s in config) {
 }
 var ensureLoggedIn = require('connect-ensure-login').ensureLoggedIn;
 
+//Overrides factory ACL's
+// app.models.user.settings.acls = require('./user-acls.json');
 
 
 app.start = function() {
@@ -78,12 +103,7 @@ app.start = function() {
   });
 };
 
-// Bootstrap the application, configure models, datasources and middleware.
-// Sub-apps like REST API are mounted via boot scripts.
-boot(app, __dirname, function(err) {
-  if (err) throw err;
-
-  // start the server if `$ node server.js`
-  if (require.main === module)
-    app.start();
-});
+// start the server if `$ node server.js`
+if (require.main === module) {
+  app.start();
+}
